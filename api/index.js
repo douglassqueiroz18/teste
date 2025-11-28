@@ -208,93 +208,136 @@ app.get('/c/:id', async (req, res) => {
       return res.status(404).send('Cliente não encontrado');
     }
 
-    // Criar PDF
+    // Criar PDF - formato retrato para cartão digital
     const doc = new PDFDocument({
-      size: [400, 600],
-      margins: { top: 50, bottom: 50, left: 50, right: 50 }
+      size: [400, 700],
+      margins: { top: 0, bottom: 0, left: 0, right: 0 }
     });
 
+    // Abrir diretamente no navegador/celular (inline ao invés de attachment)
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="cartao-visita-${(cliente.nome || 'cliente').replace(/\s+/g, '-')}.pdf"`);
+    res.setHeader('Content-Disposition', `inline; filename="cartao-${(cliente.nome || 'cliente').replace(/\s+/g, '-')}.pdf"`);
 
     doc.pipe(res);
 
-    // Estilo do cartão
     const pageWidth = doc.page.width;
     const pageHeight = doc.page.height;
-    const margin = 50;
 
-    // Fundo colorido
-    doc.rect(margin, margin, pageWidth - 2 * margin, pageHeight - 2 * margin)
-       .fillColor('#4A90E2')
+    // Fundo gradiente moderno
+    const gradient = doc.linearGradient(0, 0, 0, pageHeight);
+    gradient.stop(0, '#667eea')
+           .stop(0.5, '#764ba2')
+           .stop(1, '#f093fb');
+    
+    doc.rect(0, 0, pageWidth, pageHeight)
+       .fill(gradient);
+
+    // Área principal do cartão (com sombra visual)
+    const cardMargin = 30;
+    const cardWidth = pageWidth - (cardMargin * 2);
+    const cardHeight = pageHeight - (cardMargin * 2);
+
+    // Sombra do cartão
+    doc.rect(cardMargin + 3, cardMargin + 3, cardWidth, cardHeight)
+       .fillColor('rgba(0,0,0,0.1)')
        .fill();
 
-    // Área de conteúdo (branco)
-    const contentMargin = 20;
-    doc.rect(margin + contentMargin, margin + contentMargin, 
-             pageWidth - 2 * (margin + contentMargin), 
-             pageHeight - 2 * (margin + contentMargin))
+    // Cartão branco principal
+    doc.rect(cardMargin, cardMargin, cardWidth, cardHeight)
        .fillColor('#FFFFFF')
        .fill();
 
-    // Nome
+    // Linha decorativa no topo
+    doc.rect(cardMargin, cardMargin, cardWidth, 6)
+       .fill(gradient);
+
+    // Área de conteúdo
+    const contentPadding = 40;
+    let yPosition = cardMargin + contentPadding + 40;
+
+    // Nome principal - grande e destacado
     doc.fillColor('#2C3E50')
-       .fontSize(28)
+       .fontSize(36)
        .font('Helvetica-Bold')
-       .text(cliente.nome || 'Nome', margin + contentMargin + 30, margin + contentMargin + 40, {
-         width: pageWidth - 2 * (margin + contentMargin + 30),
-         align: 'center'
+       .text(cliente.nome || 'Nome', contentPadding, yPosition, {
+         width: cardWidth - (contentPadding * 2),
+         align: 'center',
+         lineGap: 5
        });
 
-    let yPosition = margin + contentMargin + 120;
+    // Medir altura do nome para posicionar próximo elemento
+    const nomeHeight = doc.heightOfString(cliente.nome || 'Nome', {
+      width: cardWidth - (contentPadding * 2),
+      align: 'center'
+    });
+    yPosition += nomeHeight + 50;
 
-    // Informações de contato
-    doc.fontSize(12)
-       .font('Helvetica');
+    // Linha divisória decorativa
+    const lineY = yPosition - 20;
+    doc.moveTo(contentPadding + 50, lineY)
+       .lineTo(cardWidth - contentPadding - 50, lineY)
+       .lineWidth(2)
+       .strokeColor('#667eea')
+       .stroke();
 
-    if (cliente.telefone) {
-      doc.fillColor('#34495E')
-         .text('📞 Telefone:', margin + contentMargin + 30, yPosition)
-         .fillColor('#4A90E2')
-         .text(cliente.telefone, margin + contentMargin + 30, yPosition + 20);
-      yPosition += 50;
-    }
+    yPosition += 40;
 
-    if (cliente.email) {
-      doc.fillColor('#34495E')
-         .text('✉️ Email:', margin + contentMargin + 30, yPosition)
-         .fillColor('#4A90E2')
-         .link(margin + contentMargin + 30, yPosition + 20, 300, 20, `mailto:${cliente.email}`)
-         .text(cliente.email, margin + contentMargin + 30, yPosition + 20);
-      yPosition += 50;
-    }
-
-    // Links sociais
+    // Links sociais - apenas os que existem
     const links = [];
 
     if (cliente.instagram) {
       const instagramUrl = cliente.instagram.startsWith('http') ? cliente.instagram : `https://instagram.com/${cliente.instagram.replace('@', '')}`;
-      links.push({ label: 'Instagram', url: instagramUrl, icon: '📷' });
+      links.push({ 
+        label: 'Instagram', 
+        url: instagramUrl, 
+        color: '#E4405F',
+        bgColor: '#E4405F',
+        symbol: '📷'
+      });
     }
 
     if (cliente.whatsapp) {
       const whatsappUrl = cliente.whatsapp.startsWith('http') ? cliente.whatsapp : `https://wa.me/${cliente.whatsapp.replace(/\D/g, '')}`;
-      links.push({ label: 'WhatsApp', url: whatsappUrl, icon: '💬' });
+      links.push({ 
+        label: 'WhatsApp', 
+        url: whatsappUrl, 
+        color: '#25D366',
+        bgColor: '#25D366',
+        symbol: '💬'
+      });
     }
 
     if (cliente.facebook) {
       const facebookUrl = cliente.facebook.startsWith('http') ? cliente.facebook : `https://facebook.com/${cliente.facebook}`;
-      links.push({ label: 'Facebook', url: facebookUrl, icon: '👥' });
+      links.push({ 
+        label: 'Facebook', 
+        url: facebookUrl, 
+        color: '#1877F2',
+        bgColor: '#1877F2',
+        symbol: '👥'
+      });
     }
 
     if (cliente.linkedin) {
       const linkedinUrl = cliente.linkedin.startsWith('http') ? cliente.linkedin : `https://linkedin.com/in/${cliente.linkedin}`;
-      links.push({ label: 'LinkedIn', url: linkedinUrl, icon: '💼' });
+      links.push({ 
+        label: 'LinkedIn', 
+        url: linkedinUrl, 
+        color: '#0077B5',
+        bgColor: '#0077B5',
+        symbol: '💼'
+      });
     }
 
     if (cliente.website) {
       const websiteUrl = cliente.website.startsWith('http') ? cliente.website : `https://${cliente.website}`;
-      links.push({ label: 'Website', url: websiteUrl, icon: '🌐' });
+      links.push({ 
+        label: 'Website', 
+        url: websiteUrl, 
+        color: '#667eea',
+        bgColor: '#667eea',
+        symbol: '🌐'
+      });
     }
 
     // Processar outros links
@@ -304,40 +347,86 @@ app.get('/c/:id', async (req, res) => {
         return { 
           label: label ? label.trim() : 'Link', 
           url: url ? (url.trim().startsWith('http') ? url.trim() : `https://${url.trim()}`) : '', 
-          icon: '🔗' 
+          color: '#764ba2',
+          bgColor: '#764ba2',
+          symbol: '🔗'
         };
       }).filter(link => link.url);
       links.push(...outrosLinks);
     }
 
-    // Adicionar links ao PDF
-    links.forEach((link) => {
-      if (yPosition > pageHeight - margin - contentMargin - 60) {
-        doc.addPage();
-        yPosition = margin + contentMargin + 40;
-      }
+    // Se não houver links, mostrar mensagem
+    if (links.length === 0) {
+      doc.fontSize(14)
+         .fillColor('#95A5A6')
+         .text('Adicione links nas redes sociais', contentPadding, yPosition, {
+           width: cardWidth - (contentPadding * 2),
+           align: 'center'
+         });
+    } else {
+      // Botões estilizados para cada rede social
+      const buttonHeight = 55;
+      const buttonSpacing = 15;
+      const buttonWidth = cardWidth - (contentPadding * 2);
 
-      doc.fillColor('#34495E')
-         .text(`${link.icon} ${link.label}:`, margin + contentMargin + 30, yPosition);
+      links.forEach((link, index) => {
+        // Verificar se há espaço na página
+        if (yPosition + buttonHeight > pageHeight - cardMargin - 40) {
+          // Não adicionar nova página, apenas avisar
+          return;
+        }
 
-      if (link.url) {
-        doc.fillColor('#4A90E2')
-           .link(margin + contentMargin + 30, yPosition + 20, 300, 20, link.url)
-           .text(link.url, margin + contentMargin + 30, yPosition + 20, {
-             link: link.url,
-             underline: true
-           });
-      }
+        const buttonY = yPosition;
+        
+        // Botão com fundo colorido
+        doc.roundedRect(contentPadding, buttonY, buttonWidth, buttonHeight, 10)
+           .fillColor(link.bgColor + '15') // 15 = transparência baixa
+           .fill();
 
-      yPosition += 50;
-    });
+        // Borda colorida
+        doc.roundedRect(contentPadding, buttonY, buttonWidth, buttonHeight, 10)
+           .lineWidth(2)
+           .strokeColor(link.color)
+           .stroke();
 
-    // Rodapé
-    doc.fontSize(10)
-       .fillColor('#95A5A6')
-       .text('Cartão de Visita Digital', margin + contentMargin + 30, pageHeight - margin - contentMargin - 30, {
+        // Ícone e texto do botão
+        const iconSize = 28;
+        const textX = contentPadding + 55;
+        const textY = buttonY + (buttonHeight / 2) - 10;
+        const iconX = contentPadding + 12;
+        const iconY = buttonY + (buttonHeight / 2) - 14;
+
+        // Ícone/Símbolo da rede social (grande e destacado)
+        doc.fontSize(iconSize)
+           .fillColor(link.color)
+           .text(link.symbol || link.icon || '🔗', iconX, iconY);
+
+        // Label da rede social
+        doc.fontSize(16)
+           .font('Helvetica-Bold')
+           .fillColor(link.color)
+           .text(link.label, textX, textY);
+
+        // Texto "Clique para acessar"
+        doc.fontSize(11)
+           .font('Helvetica')
+           .fillColor('#7f8c8d')
+           .text('Clique para acessar', textX, textY + 18);
+
+        // Área clicável do botão
+        doc.link(contentPadding, buttonY, buttonWidth, buttonHeight, link.url);
+
+        yPosition += buttonHeight + buttonSpacing;
+      });
+    }
+
+    // Rodapé minimalista
+    const footerY = pageHeight - cardMargin - 30;
+    doc.fontSize(9)
+       .fillColor('#BDC3C7')
+       .text('Cartão de Visita Digital', contentPadding, footerY, {
          align: 'center',
-         width: pageWidth - 2 * (margin + contentMargin + 30)
+         width: cardWidth - (contentPadding * 2)
        });
 
     doc.end();
