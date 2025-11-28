@@ -63,7 +63,32 @@ npm run dev
 - **Backend:** Node.js + Express
 - **Frontend:** HTML5, CSS3, JavaScript (Vanilla)
 - **PDF:** PDFKit
-- **Banco de Dados:** SQLite3
+- **Banco de Dados:** MongoDB Atlas (Vercel) / SQLite (local)
+
+## Deploy no Vercel
+
+Este projeto está pronto para deploy no Vercel! Veja o guia completo em [DEPLOY.md](./DEPLOY.md)
+
+**Resumo rápido:**
+1. Configure uma conta no [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) (gratuito)
+2. Obtenha a connection string do MongoDB
+3. Faça deploy no Vercel (via GitHub ou CLI)
+4. Adicione a variável de ambiente `MONGODB_URI` no Vercel
+
+### Estrutura para Vercel
+
+- `api/index.js` - Serverless function para o Vercel
+- `server.js` - Servidor Express para desenvolvimento local
+- `vercel.json` - Configuração do Vercel
+
+## Desenvolvimento Local
+
+Para desenvolvimento local, você pode usar SQLite (já configurado) ou MongoDB:
+
+```bash
+npm install
+npm start
+```
 
 ## API Endpoints
 
