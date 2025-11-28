@@ -61,11 +61,32 @@ async function initDB() {
 }
 
 const app = express();
+const fs = require('fs');
 
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+// Servir arquivos estáticos (para Vercel)
+app.get('/', (req, res) => {
+  const htmlPath = path.join(__dirname, '..', 'public', 'index.html');
+  if (fs.existsSync(htmlPath)) {
+    res.sendFile(htmlPath);
+  } else {
+    res.status(404).send('Página não encontrada');
+  }
+});
+
+// Rota para edição
+app.get('/editar/:id', (req, res) => {
+  const htmlPath = path.join(__dirname, '..', 'public', 'index.html');
+  if (fs.existsSync(htmlPath)) {
+    res.sendFile(htmlPath);
+  } else {
+    res.status(404).send('Página não encontrada');
+  }
+});
 
 // Inicializar DB antes de processar requisições
 let dbInitialized = false;
@@ -208,79 +229,90 @@ app.get('/c/:id', async (req, res) => {
       return res.status(404).send('Cliente não encontrado');
     }
 
-    // Criar PDF - formato retrato para cartão digital
+    // Criar PDF - formato retrato premium para cartão digital
     const doc = new PDFDocument({
       size: [400, 700],
       margins: { top: 0, bottom: 0, left: 0, right: 0 }
     });
 
-    // Abrir diretamente no navegador/celular (inline ao invés de attachment)
+    // Fazer download automático do PDF para garantir que o cliente tenha uma cópia
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="cartao-${(cliente.nome || 'cliente').replace(/\s+/g, '-')}.pdf"`);
+    res.setHeader('Content-Disposition', `attachment; filename="cartao-${(cliente.nome || 'cliente').replace(/\s+/g, '-')}.pdf"`);
 
     doc.pipe(res);
 
     const pageWidth = doc.page.width;
     const pageHeight = doc.page.height;
 
-    // Fundo gradiente moderno
+    // Fundo gradiente premium moderno
     const gradient = doc.linearGradient(0, 0, 0, pageHeight);
-    gradient.stop(0, '#667eea')
-           .stop(0.5, '#764ba2')
-           .stop(1, '#f093fb');
+    gradient.stop(0, '#6366f1')  // Indigo vibrante
+           .stop(0.3, '#8b5cf6') // Roxo
+           .stop(0.6, '#ec4899') // Rosa
+           .stop(1, '#f43f5e');  // Rosa vibrante
     
     doc.rect(0, 0, pageWidth, pageHeight)
        .fill(gradient);
 
-    // Área principal do cartão (com sombra visual)
-    const cardMargin = 30;
+    // Área principal do cartão com sombra elegante
+    const cardMargin = 25;
     const cardWidth = pageWidth - (cardMargin * 2);
     const cardHeight = pageHeight - (cardMargin * 2);
+    const borderRadius = 20;
 
-    // Sombra do cartão
-    doc.rect(cardMargin + 3, cardMargin + 3, cardWidth, cardHeight)
-       .fillColor('rgba(0,0,0,0.1)')
-       .fill();
+    // Múltiplas camadas de sombra para profundidade
+    for (let i = 3; i > 0; i--) {
+      doc.roundedRect(cardMargin + i, cardMargin + i, cardWidth, cardHeight, borderRadius)
+         .fillColor(`rgba(0,0,0,${0.05 * i})`)
+         .fill();
+    }
 
-    // Cartão branco principal
-    doc.rect(cardMargin, cardMargin, cardWidth, cardHeight)
+    // Cartão branco principal com bordas arredondadas
+    doc.roundedRect(cardMargin, cardMargin, cardWidth, cardHeight, borderRadius)
        .fillColor('#FFFFFF')
        .fill();
 
-    // Linha decorativa no topo
-    doc.rect(cardMargin, cardMargin, cardWidth, 6)
+    // Barra superior decorativa com gradiente
+    const topBarHeight = 8;
+    doc.roundedRect(cardMargin, cardMargin, cardWidth, topBarHeight, borderRadius)
        .fill(gradient);
 
     // Área de conteúdo
-    const contentPadding = 40;
-    let yPosition = cardMargin + contentPadding + 40;
+    const contentPadding = 35;
+    let yPosition = cardMargin + 60;
 
-    // Nome principal - grande e destacado
-    doc.fillColor('#2C3E50')
-       .fontSize(36)
+    // Nome principal - estilo premium
+    doc.fillColor('#1e293b')
+       .fontSize(42)
        .font('Helvetica-Bold')
        .text(cliente.nome || 'Nome', contentPadding, yPosition, {
          width: cardWidth - (contentPadding * 2),
          align: 'center',
-         lineGap: 5
+         lineGap: 8
        });
 
-    // Medir altura do nome para posicionar próximo elemento
+    // Medir altura do nome
     const nomeHeight = doc.heightOfString(cliente.nome || 'Nome', {
       width: cardWidth - (contentPadding * 2),
       align: 'center'
     });
-    yPosition += nomeHeight + 50;
+    yPosition += nomeHeight + 45;
 
-    // Linha divisória decorativa
-    const lineY = yPosition - 20;
-    doc.moveTo(contentPadding + 50, lineY)
-       .lineTo(cardWidth - contentPadding - 50, lineY)
-       .lineWidth(2)
-       .strokeColor('#667eea')
-       .stroke();
+    // Linha divisória elegante com gradiente
+    const lineY = yPosition - 25;
+    const lineWidth = cardWidth - (contentPadding * 2) - 80;
+    const lineX = (pageWidth - lineWidth) / 2;
+    
+    // Linha com gradiente (simulado com múltiplas linhas)
+    for (let i = 0; i < 3; i++) {
+      doc.moveTo(lineX, lineY + i)
+         .lineTo(lineX + lineWidth, lineY + i)
+         .lineWidth(1)
+         .strokeColor(i === 1 ? '#6366f1' : '#e2e8f0')
+         .stroke();
+    }
 
-    yPosition += 40;
+    yPosition += 35;
 
     // Links sociais - apenas os que existem
     const links = [];
@@ -364,66 +396,83 @@ app.get('/c/:id', async (req, res) => {
            align: 'center'
          });
     } else {
-      // Botões estilizados para cada rede social
-      const buttonHeight = 55;
-      const buttonSpacing = 15;
+      // Botões premium estilizados para cada rede social
+      const buttonHeight = 65;
+      const buttonSpacing = 18;
       const buttonWidth = cardWidth - (contentPadding * 2);
+      const buttonRadius = 15;
 
       links.forEach((link, index) => {
         // Verificar se há espaço na página
-        if (yPosition + buttonHeight > pageHeight - cardMargin - 40) {
-          // Não adicionar nova página, apenas avisar
+        if (yPosition + buttonHeight > pageHeight - cardMargin - 50) {
           return;
         }
 
         const buttonY = yPosition;
         
-        // Botão com fundo colorido
-        doc.roundedRect(contentPadding, buttonY, buttonWidth, buttonHeight, 10)
-           .fillColor(link.bgColor + '15') // 15 = transparência baixa
+        // Sombra sutil do botão
+        doc.roundedRect(contentPadding + 2, buttonY + 2, buttonWidth, buttonHeight, buttonRadius)
+           .fillColor('rgba(0,0,0,0.05)')
            .fill();
 
-        // Borda colorida
-        doc.roundedRect(contentPadding, buttonY, buttonWidth, buttonHeight, 10)
-           .lineWidth(2)
+        // Fundo do botão com cor suave (simulado)
+        doc.roundedRect(contentPadding, buttonY, buttonWidth, buttonHeight, buttonRadius)
+           .fillColor('#f8fafc')
+           .fill();
+
+        // Borda elegante
+        doc.roundedRect(contentPadding, buttonY, buttonWidth, buttonHeight, buttonRadius)
+           .lineWidth(2.5)
            .strokeColor(link.color)
            .stroke();
 
         // Ícone e texto do botão
-        const iconSize = 28;
-        const textX = contentPadding + 55;
-        const textY = buttonY + (buttonHeight / 2) - 10;
-        const iconX = contentPadding + 12;
-        const iconY = buttonY + (buttonHeight / 2) - 14;
+        const iconSize = 32;
+        const iconCircleSize = 48;
+        const iconCircleX = contentPadding + 15;
+        const iconCircleY = buttonY + (buttonHeight / 2) - (iconCircleSize / 2);
+        const textX = contentPadding + 75;
+        const textY = buttonY + (buttonHeight / 2) - 12;
 
-        // Ícone/Símbolo da rede social (grande e destacado)
+        // Círculo de fundo para o ícone (cor suave)
+        const lightColor = link.color === '#E4405F' ? '#fce7f3' : 
+                          link.color === '#25D366' ? '#d1fae5' :
+                          link.color === '#1877F2' ? '#dbeafe' :
+                          link.color === '#0077B5' ? '#e0f2fe' :
+                          link.color === '#667eea' ? '#eef2ff' : '#f3f4f6';
+        doc.circle(iconCircleX + (iconCircleSize / 2), iconCircleY + (iconCircleSize / 2), iconCircleSize / 2)
+           .fillColor(lightColor)
+           .fill();
+
+        // Ícone da rede social
         doc.fontSize(iconSize)
            .fillColor(link.color)
-           .text(link.symbol || link.icon || '🔗', iconX, iconY);
+           .text(link.symbol || link.icon || '🔗', iconCircleX + 8, iconCircleY + 8);
 
-        // Label da rede social
-        doc.fontSize(16)
+        // Label da rede social - estilo premium
+        doc.fontSize(18)
            .font('Helvetica-Bold')
-           .fillColor(link.color)
+           .fillColor('#1e293b')
            .text(link.label, textX, textY);
 
-        // Texto "Clique para acessar"
+        // Texto "Toque para acessar" - mais elegante
         doc.fontSize(11)
            .font('Helvetica')
-           .fillColor('#7f8c8d')
-           .text('Clique para acessar', textX, textY + 18);
+           .fillColor('#64748b')
+           .text('Toque para acessar', textX, textY + 22);
 
-        // Área clicável do botão
+        // Área clicável do botão (toda a área)
         doc.link(contentPadding, buttonY, buttonWidth, buttonHeight, link.url);
 
         yPosition += buttonHeight + buttonSpacing;
       });
     }
 
-    // Rodapé minimalista
-    const footerY = pageHeight - cardMargin - 30;
-    doc.fontSize(9)
-       .fillColor('#BDC3C7')
+    // Rodapé elegante e minimalista
+    const footerY = pageHeight - cardMargin - 25;
+    doc.fontSize(8)
+       .font('Helvetica')
+       .fillColor('#cbd5e1')
        .text('Cartão de Visita Digital', contentPadding, footerY, {
          align: 'center',
          width: cardWidth - (contentPadding * 2)
