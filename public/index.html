@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cartão de Visita Digital - Editor</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📇 Cartão de Visita Digital</h1>
+            <p class="subtitle">Crie e edite seu cartão de visita digital</p>
+        </header>
+
+        <div class="alert" id="alert" style="display: none;"></div>
+
+        <form id="clienteForm">
+            <div class="form-section">
+                <h2>Informações Pessoais</h2>
+                
+                <div class="form-group">
+                    <label for="nome">Nome Completo *</label>
+                    <input type="text" id="nome" name="nome" required placeholder="Seu nome completo">
+                </div>
+
+                <div class="form-group">
+                    <label for="telefone">Telefone</label>
+                    <input type="text" id="telefone" name="telefone" placeholder="(00) 00000-0000">
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" placeholder="seu@email.com">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>Redes Sociais e Links</h2>
+                
+                <div class="form-group">
+                    <label for="instagram">Instagram</label>
+                    <input type="text" id="instagram" name="instagram" placeholder="@usuario ou URL completa">
+                </div>
+
+                <div class="form-group">
+                    <label for="whatsapp">WhatsApp</label>
+                    <input type="text" id="whatsapp" name="whatsapp" placeholder="Número com DDD (ex: 5511999999999)">
+                </div>
+
+                <div class="form-group">
+                    <label for="facebook">Facebook</label>
+                    <input type="text" id="facebook" name="facebook" placeholder="URL ou nome de usuário">
+                </div>
+
+                <div class="form-group">
+                    <label for="linkedin">LinkedIn</label>
+                    <input type="text" id="linkedin" name="linkedin" placeholder="URL ou nome de usuário">
+                </div>
+
+                <div class="form-group">
+                    <label for="website">Website</label>
+                    <input type="text" id="website" name="website" placeholder="www.seusite.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="outros_links">Outros Links</label>
+                    <input type="text" id="outros_links" name="outros_links" placeholder="Formato: Nome|URL, Nome2|URL2">
+                    <small>Separe múltiplos links com vírgula. Formato: Nome|URL</small>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" id="submitBtn" class="btn btn-primary">
+                    <span id="submitText">Salvar e Gerar Link</span>
+                </button>
+                <button type="button" id="previewBtn" class="btn btn-secondary" style="display: none;">
+                    Visualizar PDF
+                </button>
+            </div>
+        </form>
+
+        <div id="linkSection" class="link-section" style="display: none;">
+            <h2>Seu Link Exclusivo</h2>
+            <div class="link-box">
+                <input type="text" id="exclusiveLink" readonly>
+                <button type="button" id="copyBtn" class="btn btn-copy">Copiar</button>
+            </div>
+            <p class="link-info">Compartilhe este link para que outras pessoas possam baixar seu cartão de visita em PDF</p>
+        </div>
+
+        <div id="clientesList" class="clientes-list" style="display: none;">
+            <h2>Clientes Cadastrados</h2>
+            <ul id="clientesListItems"></ul>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
